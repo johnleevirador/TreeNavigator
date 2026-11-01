@@ -16,7 +16,7 @@ This release introduces the redesigned payload system, dynamic tree management, 
 
 Rendering is intentionally left to the application, allowing TreeNavigator to work independently of any particular display or user-interface library.
 
-## [1.0.0] - 2026-10-30
+## [1.0.0] - 2026-11-1
 
 ### Added
 - Introduced the `Payload` structure to separate element-specific data from navigation metadata.
