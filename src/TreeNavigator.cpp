@@ -340,24 +340,26 @@ ErrorCode TreeNavigator::appendSibling(const Payload& sibling) {
 
 ErrorCode TreeNavigator::appendChild(const Payload& child) {
     const std::string& elId = child.elementId;
-    const Metadata childForm{parentId, child};
 
     if (elId.empty()) {
         return ErrorCode::ElementIdEmpty;
     }
-    // The element must not already exist.
     if (directory.count(elId) > 0) {
         return ErrorCode::DuplicateElement;
     }
 
     const Metadata selected = current();
 
-    directory.at(selected.elementId).push_back(childForm);
+    // Prevent self-loop: can't append an element as its own child.
+    if (elId == selected.elementId) {
+        return ErrorCode::DuplicateElement;
+    }
 
-    directory.emplace(
-        elId,
-        std::vector<Metadata>{childForm}
-    );
+    // The new element's parent is the cursor's ELEMENT, not its container.
+    const Metadata childForm{selected.elementId, child};
+
+    directory.at(selected.elementId).push_back(childForm);
+    directory.emplace(elId, std::vector<Metadata>{childForm});
 
     return ErrorCode::Success;
 }
