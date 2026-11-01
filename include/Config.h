@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <cstddef>
 
 struct Metadata {
     // ============================ //
@@ -22,4 +23,9 @@ struct Metadata {
     int yPos = 0;
     int width = 0;
     int height = 0;
+};
+
+struct NavigationState {
+    std::string parentId;
+    std::size_t index;
 };

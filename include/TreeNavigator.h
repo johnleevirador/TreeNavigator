@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <cstddef>
 #include <vector>
 #include <unordered_map>
 
@@ -24,9 +25,13 @@ class TreeNavigator {
             std::vector<Metadata>
         > directory;
 
+        std::vector<NavigationState> history;
+
         void validateElement(const Metadata& element) const;
 
         void registerElement(const Metadata& element);
+
+        void saveHistory();
 
     public:
         TreeNavigator(const std::vector<Metadata>& config);
@@ -51,7 +56,9 @@ class TreeNavigator {
 
         void enter();
 
-        void back();
+        bool back();
+
+        bool undo();
 
         bool go(std::string id);
 

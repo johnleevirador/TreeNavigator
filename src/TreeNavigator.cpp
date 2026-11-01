@@ -52,10 +52,28 @@ void TreeNavigator::registerElement(const Metadata& element) {
     );
 }
 
+void TreeNavigator::saveHistory() {
+    // Defensive: don't push a duplicate of the current top.
+    // The no-op guards in enter()/go() prevent this in normal navigation,
+    // but this check ensures the invariant even if a future change
+    // bypasses those guards.
+    if (!history.empty()) {
+        const NavigationState& top = history.back();
+
+        if (top.parentId == parentId && top.index == currentIndex) {
+            return;
+        }
+    }
+
+    history.push_back({
+        parentId,
+        currentIndex,
+    });
+}
+
 // ============================================================ //
 // -- CONSTRUCTOR                                            -- //
 // ============================================================ //
-
 TreeNavigator::TreeNavigator(const std::vector<Metadata>& config) {
     // 1. A root declaration is required.
     if (config.size() < 2) {
@@ -95,7 +113,6 @@ TreeNavigator::TreeNavigator(const std::vector<Metadata>& config) {
 // ============================================================ //
 // -- CURSOR STATE                                           -- //
 // ============================================================ //
-
 bool TreeNavigator::CursorState::operator==(const CursorState& other) const {
     return containerId == other.containerId && index == other.index;
 }
@@ -108,10 +125,6 @@ bool TreeNavigator::CursorState::operator!=(const CursorState& other) const {
 // -- NAVIGATION METHODS                                     -- //
 // ============================================================ //
 Metadata TreeNavigator::current() const {
-    if (directory.at(parentId).size() == 1) {
-        return directory.at(parentId).at(0); // No children: return own metadata.
-    }
-
     return directory.at(parentId).at(currentIndex);
 }
 
@@ -159,22 +172,65 @@ void TreeNavigator::prev() {
 void TreeNavigator::enter() {
     const Metadata selected = current();
 
+    // If we're already inside the selected container,
+    if (selected.elementId == parentId) {
+        return; // this only applies to leaf
+    }
+
+    saveHistory();
+
     parentId = selected.elementId;
-    currentIndex = 1;
+    currentIndex = (directory.at(parentId).size() == 1) ? 0 : 1;   // 0 for leaves
     wrap = directory.at(parentId).at(0).wrap;
 }
 
-void TreeNavigator::back() {
-    const Metadata previous = getParentMetadata();
-
+bool TreeNavigator::back() {
     // Already at the root; there is nowhere to go back to.
     if (isRoot()) {
-        return;
+        return false;
     }
 
-    parentId = previous.parentId;
-    currentIndex = 1;
+    // The container we're leaving.
+    const Metadata previous = getParentMetadata();
+    const std::string& leavingId = previous.elementId;
+    const std::string& targetParent = previous.parentId;
+
+    // Move to the parent.
+    parentId = targetParent;
+
+    // Find the leaving container in the parent's children.
+    const std::vector<Metadata>& siblings = directory.at(targetParent);
+
+    for (std::size_t i = 1; i < siblings.size(); i++) { // i = 1: skip self-entry
+        if (siblings[i].elementId == leavingId) {
+            currentIndex = i;
+            wrap = directory.at(parentId).at(0).wrap;
+            return true;
+        }
+    }
+
+    // Fallback: container not found in parent (shouldn't happen,
+    // but defensive against dynamic mode). Land on the first child, or self
+    // if the parent has no children.
+    currentIndex = (siblings.size() == 1) ? 0 : 1;
     wrap = directory.at(parentId).at(0).wrap;
+
+    return true;
+}
+
+bool TreeNavigator::undo() {
+    if (history.empty()) {
+        return false;
+    }
+
+    const NavigationState previous = history.back();
+    history.pop_back();
+
+    parentId = previous.parentId;
+    currentIndex = previous.index;
+    wrap = directory.at(parentId).at(0).wrap;
+
+    return true;
 }
 
 bool TreeNavigator::go(std::string id) {
@@ -182,8 +238,15 @@ bool TreeNavigator::go(std::string id) {
         return false;
     }
 
+    // already there, the caller's request is satisfied
+    if (id == parentId) {
+        return true;
+    }
+
+    saveHistory();
+
     parentId = id;
-    currentIndex = 1;
+    currentIndex = (directory.at(parentId).size() == 1) ? 0 : 1;
     wrap = directory.at(parentId).at(0).wrap;
 
     return true;
@@ -217,6 +280,7 @@ const std::vector<Metadata>& TreeNavigator::getSiblingsRef() const {
 // ============================================================ //
 // -- CHILDREN METHODS                                       -- //
 // ============================================================ //
+
 std::size_t TreeNavigator::getChildrenCount() const {
     const Metadata selected = current();
     return directory.at(selected.elementId).size() - 1;
