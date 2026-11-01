@@ -1,3 +1,70 @@
+# Changelog
+
+All notable changes to TreeNavigator are documented in this file.
+
+Versions `0.1.0` and `0.2.0` represent development milestones created before the first official public release. Version `1.0.0` marks the first official public release of TreeNavigator.
+
+---
+
+# TreeNavigator v1.0.0 — Initial Public Release
+
+The first official public release of TreeNavigator!
+
+TreeNavigator provides a lightweight, tree-based navigation and management system for C++ applications. It allows developers to define hierarchical elements and navigate through or modify them using a simple API.
+
+This release introduces the redesigned payload system, dynamic tree management, configuration validation, sibling navigation, parent-child traversal, direct navigation, and metadata retrieval.
+
+Rendering is intentionally left to the application, allowing TreeNavigator to work independently of any particular display or user-interface library.
+
+## [1.0.0] - 2026-10-30
+
+### Added
+- Introduced the `Payload` structure to separate element-specific data from navigation metadata.
+- Updated `Metadata` to inherit from `Payload`, providing direct access to payload members while retaining the required `parentId`.
+- Added `TREENAV_CUSTOM_PAYLOAD` macro for defining application-specific payload members.
+- Introduced `DEFINE_CUSTOM_PAYLOAD` macro to inject custom members into `Payload`.
+- Added compile-time validation through `static_assert` to ensure the custom payload injection mechanism remains defined.
+- Added dynamic tree management capabilities:
+  - `appendSibling()` to append a new sibling to the current container.
+  - `appendChild()` to append a new child to the currently selected element.
+  - `deleteNode()` to delete the selected element and its entire subtree.
+  - `updatePayload()` to update the selected element's payload without changing its ID.
+- Added internal `validateElement()` helper for validating elements before registration.
+- Added internal `registerElement()` helper for registering new elements into the directory.
+- Added internal `collectPostOrder()` helper for collecting elements in post-order traversal, supporting subtree deletion.
+- Introduced `ErrorCode` enum for standardized error reporting across tree management operations.
+- Added error codes for:
+  - `Success`
+  - `ParentIdEmpty`
+  - `ElementIdEmpty`
+  - `DuplicateElement`
+  - `ParentNotDefined`
+  - `CannotDeleteRoot`
+  - `CannotChangeElementId`
+
+### Changed
+- Redesigned element configuration to use `Payload` as the source of element-specific data.
+- Updated the `Metadata` constructor to accept a parent ID and a `Payload` object.
+- Changed payload customization from individually defined metadata fields to a centralized customization area in `Config.h`.
+- Updated the configuration API to support the new `Payload` and `Metadata` relationship.
+- Extended navigation history handling to account for dynamically modified tree structures.
+- Updated `directory` management to support runtime registration and removal of elements.
+
+### Improved
+- Improved extensibility by allowing developers to define custom payload members without modifying the required members of `Payload` or `Metadata`.
+- Improved tree management flexibility by allowing elements to be created, updated, and deleted after initialization.
+- Improved subtree deletion by supporting the removal of an element and all its descendants.
+- Improved API flexibility by allowing developers to choose between independent copies and read-only references when retrieving sibling and child collections.
+
+### Notes
+- This release introduces changes to the configuration and payload API. Existing configurations from previous versions may require modifications.
+- Custom payload members must be declared in the designated customization area inside `Config.h`.
+- Element IDs remain immutable through `updatePayload()`.
+- The root element cannot be deleted.
+- Rendering and input handling remain the responsibility of the application using TreeNavigator.
+
+---
+
 # [0.2.0] - 2026-10-24
 
 This version represents the second development milestone of TreeNavigator, originally developed locally as version `1.1.0`.
