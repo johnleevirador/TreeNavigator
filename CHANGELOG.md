@@ -16,6 +16,20 @@ This release introduces the redesigned payload system, dynamic tree management, 
 
 Rendering is intentionally left to the application, allowing TreeNavigator to work independently of any particular display or user-interface library.
 
+## [1.0.1] - 2026-11-2
+
+### Fixed
+- **appendChild() now sets the new element's parentId to the cursor's
+  element, not the cursor's container.** Previously, elements appended
+  via appendChild() had a parentId that pointed to the wrong container
+  whenever the cursor was inside a container with children. This broke
+  back() and getParentMetadata() for the affected subtree: back() would
+  search the wrong parent, fail to find the element, and fall back to
+  the first child. The bug was silent — no exception was thrown.
+  appendSibling() was already correct.
+- **appendChild() now rejects self-loops** (child.elementId equal to
+  the current element's ID) with ErrorCode::DuplicateElement.
+
 ## [1.0.0] - 2026-11-1
 
 ### Added
